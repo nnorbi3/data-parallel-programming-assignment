@@ -1,0 +1,33 @@
+﻿  Compiling CUDA source file kernel.cu...
+  
+  D:\School\CUDA\Nagy_Norbert_GSHN0W_assignment\Nagy_Norbert_GSHN0W_assignment>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\bin\HostX86\x64" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir x64\Debug -maxrregcount=0  --machine 64 --compile -cudart static  -g   -DWIN32 -DWIN64 -D_DEBUG -D_CONSOLE -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /Fdx64\Debug\vc141.pdb /FS /Zi /RTC1 /MDd " -o x64\Debug\kernel.cu.obj "D:\School\CUDA\Nagy_Norbert_GSHN0W_assignment\Nagy_Norbert_GSHN0W_assignment\kernel.cu" 
+D:/School/CUDA/Nagy_Norbert_GSHN0W_assignment/Nagy_Norbert_GSHN0W_assignment/kernel.cu(143): warning : conversion from a string literal to "char *" is deprecated
+  
+D:/School/CUDA/Nagy_Norbert_GSHN0W_assignment/Nagy_Norbert_GSHN0W_assignment/kernel.cu(143): warning : conversion from a string literal to "char *" is deprecated
+  
+  kernel.cu
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(712): warning C4334: '<<': result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(730): warning C4267: '=': conversion from 'size_t' to 'unsigned short', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(731): warning C4334: '<<': result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(754): warning C4267: '=': conversion from 'size_t' to 'unsigned short', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(771): warning C4267: '=': conversion from 'size_t' to 'unsigned short', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(3728): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(4698): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(4920): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(4925): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(4926): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(4927): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(4928): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(4929): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(4930): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(4931): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(5122): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(5146): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(5180): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(5197): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(5219): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(5250): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(5363): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+d:\school\cuda\nagy_norbert_gshn0w_assignment\nagy_norbert_gshn0w_assignment\lodepng.cpp(5441): warning C4334: '<<': result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
+D:/School/CUDA/Nagy_Norbert_GSHN0W_assignment/Nagy_Norbert_GSHN0W_assignment/kernel.cu(34): warning C4018: '<': signed/unsigned mismatch
+  Nagy_Norbert_GSHN0W_assignment.vcxproj -> D:\School\CUDA\Nagy_Norbert_GSHN0W_assignment\x64\Debug\Nagy_Norbert_GSHN0W_assignment.exe
