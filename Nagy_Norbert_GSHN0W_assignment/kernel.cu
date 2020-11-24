@@ -4,6 +4,10 @@
 #include "lodepng.h"
 #include "lodepng.cpp"
 #include <stdio.h>
+#include <iostream>
+#include <fstream> 
+#include <chrono>
+using namespace std::chrono;
 
 #define THREAD_COUNT_PER_DIM 30
 #define INPUT_IMG "input_img.png"
@@ -67,6 +71,19 @@ void writePngImage(char* filename, std::string appendText, Image outputImage) {
 //  1  2  1
 
 // arr[x][y] == arr[y*width + x]
+
+void sobelEdgeDetectionCpu(const byte* original, byte* destination, const unsigned int width, const unsigned int height) {
+	for (int y = 1; y < height - 1; y++) {
+		for (int x = 1; x < width - 1; x++) {
+			int dx = (-1 * original[(y - 1) * width + (x - 1)]) + (-2 * original[y * width + (x - 1)]) + (-1 * original[(y + 1) * width + (x - 1)]) +
+				(original[(y - 1) * width + (x + 1)]) + (2 * original[y * width + (x + 1)]) + (original[(y + 1) * width + (x + 1)]);
+			int dy = (original[(y - 1) * width + (x - 1)]) + (2 * original[(y - 1) * width + x]) + (original[(y - 1) * width + (x + 1)]) +
+				(-1 * original[(y + 1) * width + (x - 1)]) + (-2 * original[(y + 1) * width + x]) + (-1 * original[(y + 1) * width + (x + 1)]);
+			destination[y * width + x] = sqrt((dx * dx) + (dy * dy));
+		}
+	}
+}
+
 __global__ void sobelEdgeDetectionGpu(const byte* d_sourceImage, byte* d_destinationImage, const unsigned int width, const unsigned int height) {
 	int x = blockIdx.x * blockDim.x + threadIdx.x;
 	int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -92,10 +109,8 @@ void createGaussKernel(double gaussKernel[5])
 	double s = 2.0 * sigma * sigma;
 	double r;
 
-	// sum is for normalization 
 	double sum = 0.0;
 
-	// generating 5x5 kernel 
 	for (int x = -2; x <= 2; x++) {
 		for (int y = -2; y <= 2; y++) {
 			r = sqrt(x * x + y * y);
@@ -108,6 +123,34 @@ void createGaussKernel(double gaussKernel[5])
 	for (int i = 0; i < 5; ++i) {
 		for (int j = 0; j < 5; ++j) {
 			gaussKernel[i * 5 + j] /= sum;
+		}
+	}
+}
+
+void gaussianBlurCpu(const byte* original, byte* destination, double* gKernel, const unsigned int width, const unsigned int height) {
+	for (int y = 0; y < height - 1; y++)
+	{
+		for (int x = 0; x < width - 1; x++)
+		{
+			if (x > 0 && y > 0 && x < width - 1 && y < height - 1)
+			{
+				double sum = 0;
+				for (int i = 0; i < 5; i++)
+				{
+					for (int j = 0; j < 5; j++)
+					{
+						int num;
+						if (y < 4 || x < 4) {
+							num = 20;
+						}
+						else {
+							num = original[(y - 2 + i) * width + (x - 2 + j)];
+						}
+						sum += num * gKernel[i * 5 + j];
+					}
+				}
+				destination[y * width + x] = round(sum);
+			}
 		}
 	}
 }
@@ -148,52 +191,116 @@ int main() {
 	dim3 threadsPerBlock(THREAD_COUNT_PER_DIM, THREAD_COUNT_PER_DIM);
 	dim3 numberOfBlocks(ceil(width / THREAD_COUNT_PER_DIM), ceil(height / THREAD_COUNT_PER_DIM));
 
-#pragma region Gaussian filter
 	double gKernel[25];
 	createGaussKernel(gKernel);
-	Image gaussDestinationImage(new byte[width * height], width, height);
 
-	byte *d_gaussSource;
-	byte *d_gaussDestination;
+	std::ofstream metrics("metrics.txt");
 
-	cudaMalloc((void**)&d_gaussSource, (width * height));
-	cudaMalloc((void**)&d_gaussDestination, (width * height));
-	cudaMemcpy(d_gaussSource, originalImage.pixels, (width * height), cudaMemcpyHostToDevice);
-	cudaMemset(d_gaussDestination, 0, (width * height));
-	cudaMemcpyToSymbol(d_gKernel, gKernel, sizeof(double) * 25);
+	metrics << "gauss-cpu;gauss-gpu;sobel-cpu;sobel-gpu" << std::endl;
 
-	gaussianBlurGpu << <numberOfBlocks, threadsPerBlock >> > (d_gaussSource, d_gaussDestination, width, height);
+	for (int i = 0; i < 100; i++)
+	{
 
-	cudaMemcpy(gaussDestinationImage.pixels, d_gaussDestination, (width * height), cudaMemcpyDeviceToHost);
+#pragma region Gaussian filter[CPU]
+		Image gaussDestinationImageCpu(new byte[width * height], width, height);
 
-	writePngImage(filename, "gauss", gaussDestinationImage);
+		auto gaussStartCpu = high_resolution_clock::now();
+		gaussianBlurCpu(originalImage.pixels, gaussDestinationImageCpu.pixels, gKernel, width, height);
+		auto gaussStopCpu = high_resolution_clock::now();
 
-	cudaFree(d_gaussSource);
-	cudaFree(d_gaussDestination);
+		auto gaussElapsedTimeCpu = duration_cast<microseconds>(gaussStopCpu - gaussStartCpu);
+		printf("Gaussian blur CPU: %ld ms\n", gaussElapsedTimeCpu.count() / 1000);
+		writePngImage(filename, "gauss_cpu", gaussDestinationImageCpu);
 #pragma endregion
 
-#pragma region Sobel edge detection on blurred image
-	Image sobelDestinationImage(new byte[width * height], width, height);
+#pragma region Gaussian filter[GPU]
+		Image gaussDestinationImageGpu(new byte[width * height], width, height);
 
-	byte *d_sobelSource;
-	byte *d_sobelDestination;
-	cudaMalloc((void**)&d_sobelSource, (width * height));
-	cudaMalloc((void**)&d_sobelDestination, (width * height));
-	cudaMemcpy(d_sobelSource, gaussDestinationImage.pixels, (width * height), cudaMemcpyHostToDevice);
-	cudaMemset(d_sobelDestination, 0, (width * height));
+		byte *d_gaussSource;
+		byte *d_gaussDestination;
 
-	sobelEdgeDetectionGpu << <numberOfBlocks, threadsPerBlock >> > (d_sobelSource, d_sobelDestination, width, height);
+		cudaMalloc((void**)&d_gaussSource, (width * height));
+		cudaMalloc((void**)&d_gaussDestination, (width * height));
+		cudaMemcpy(d_gaussSource, originalImage.pixels, (width * height), cudaMemcpyHostToDevice);
+		cudaMemset(d_gaussDestination, 0, (width * height));
+		cudaMemcpyToSymbol(d_gKernel, gKernel, sizeof(double) * 25);
 
-	cudaMemcpy(sobelDestinationImage.pixels, d_sobelDestination, (width * height), cudaMemcpyDeviceToHost);
+		cudaEvent_t gaussStart, gaussEnd;
+		cudaEventCreate(&gaussStart);
+		cudaEventCreate(&gaussEnd);
 
-	writePngImage(filename, "sobel", sobelDestinationImage);
+		cudaEventRecord(gaussStart, 0);
+		gaussianBlurGpu << <numberOfBlocks, threadsPerBlock >> > (d_gaussSource, d_gaussDestination, width, height);
+		cudaEventRecord(gaussEnd, 0);
 
-	cudaFree(d_sobelSource);
-	cudaFree(d_sobelDestination);
+		cudaMemcpy(gaussDestinationImageGpu.pixels, d_gaussDestination, (width * height), cudaMemcpyDeviceToHost);
+
+		cudaEventSynchronize(gaussEnd);
+		float gaussElapsedTimeGpu = 0.0f;
+		cudaEventElapsedTime(&gaussElapsedTimeGpu, gaussStart, gaussEnd);
+		printf("Gaussian blur GPU: %f ms\n", gaussElapsedTimeGpu);
+
+		writePngImage(filename, "gauss_gpu", gaussDestinationImageGpu);
+
+		cudaFree(d_gaussSource);
+		cudaFree(d_gaussDestination);
 #pragma endregion
 
-	delete[] gaussDestinationImage.pixels;
-	delete[] sobelDestinationImage.pixels;
+#pragma region Sobel edge detection on blurred image[CPU]
+		Image sobelDestinationImageCpu(new byte[width * height], width, height);
+
+		auto sobelStartCpu = high_resolution_clock::now();
+		sobelEdgeDetectionCpu(gaussDestinationImageCpu.pixels, sobelDestinationImageCpu.pixels, width, height);
+		auto sobelEndCpu = high_resolution_clock::now();
+
+		auto sobelElapsedTimeCpu = duration_cast<microseconds>(sobelEndCpu - sobelStartCpu);
+		printf("Sobel edge detection CPU: %ld ms\n", sobelElapsedTimeCpu.count() / 1000);
+		writePngImage(filename, "sobel_cpu", sobelDestinationImageCpu);
+#pragma endregion
+
+#pragma region Sobel edge detection on blurred image[GPU]
+		Image sobelDestinationImageGpu(new byte[width * height], width, height);
+
+		byte *d_sobelSource;
+		byte *d_sobelDestination;
+		cudaMalloc((void**)&d_sobelSource, (width * height));
+		cudaMalloc((void**)&d_sobelDestination, (width * height));
+		cudaMemcpy(d_sobelSource, gaussDestinationImageGpu.pixels, (width * height), cudaMemcpyHostToDevice);
+		cudaMemset(d_sobelDestination, 0, (width * height));
+
+		cudaEvent_t sobelStart, sobelEnd;
+		cudaEventCreate(&sobelStart);
+		cudaEventCreate(&sobelEnd);
+
+		cudaEventRecord(sobelStart, 0);
+		sobelEdgeDetectionGpu << <numberOfBlocks, threadsPerBlock >> > (d_sobelSource, d_sobelDestination, width, height);
+		cudaEventRecord(sobelEnd, 0);
+
+		cudaMemcpy(sobelDestinationImageGpu.pixels, d_sobelDestination, (width * height), cudaMemcpyDeviceToHost);
+
+		cudaEventSynchronize(sobelEnd);
+		float sobelElapsedTimeGpu = 0.0f;
+		cudaEventElapsedTime(&sobelElapsedTimeGpu, sobelStart, sobelEnd);
+		printf("Sobel edge detection GPU: %f ms\n", sobelElapsedTimeGpu);
+
+		writePngImage(filename, "sobel_gpu", sobelDestinationImageGpu);
+
+		cudaFree(d_sobelSource);
+		cudaFree(d_sobelDestination);
+#pragma endregion
+
+		delete[] gaussDestinationImageCpu.pixels;
+		delete[] gaussDestinationImageGpu.pixels;
+		delete[] sobelDestinationImageCpu.pixels;
+		delete[] sobelDestinationImageGpu.pixels;
+
+		std::string line = std::to_string(gaussElapsedTimeCpu.count() / 1000) + ";" + std::to_string(gaussElapsedTimeGpu) + ";"
+			+ std::to_string(sobelElapsedTimeCpu.count() / 1000) + ";" + std::to_string(sobelElapsedTimeGpu);
+
+		metrics << line.c_str() << std::endl;
+	}
+
+	metrics.close();
 
 	return 0;
 }
